@@ -1,6 +1,6 @@
 import type React from "react"
 import { Sidebar } from "@/components/sidebar"
-import { Header } from "@/components/header"
+import Header from "@/components/header"
 import { AuthProvider } from "@/components/auth-provider"
 
 export default function DashboardLayout({
