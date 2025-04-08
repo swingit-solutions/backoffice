@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+    experimental: {
+      serverActions: true,
+    },
     async rewrites() {
       return [
         {
@@ -9,7 +12,6 @@ const nextConfig = {
         },
       ]
     },
-    // Add this section for domain configuration
     images: {
       domains: ["backoffice.swingit.solutions"],
     },
