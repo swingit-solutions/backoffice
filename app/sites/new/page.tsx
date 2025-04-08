@@ -62,7 +62,7 @@ export default function NewSitePage() {
       })
 
       // Redirect to sites list
-      router.push("/backoffice/sites")
+      router.push("/sites")
     } catch (error: any) {
       toast({
         title: "Failed to create site",
@@ -143,7 +143,7 @@ export default function NewSitePage() {
           </CardContent>
 
           <CardFooter className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => router.push("/backoffice/sites")}>
+            <Button type="button" variant="outline" onClick={() => router.push("/sites")}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>

@@ -10,7 +10,7 @@ export default async function LoginPage() {
 
   // If the user is already logged in, redirect to the dashboard
   if (session) {
-    redirect("/backoffice/dashboard")
+    redirect("/dashboard")
   }
 
   return (

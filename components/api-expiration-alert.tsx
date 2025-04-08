@@ -55,7 +55,7 @@ export function ApiExpirationAlert() {
           })}
         </ul>
         <div className="mt-3">
-          <Link href="/backoffice/settings/api-keys" className="text-blue-600 hover:underline">
+          <Link href="/settings/api-keys" className="text-blue-600 hover:underline">
             Manage API Keys
           </Link>
         </div>

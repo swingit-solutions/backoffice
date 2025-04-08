@@ -20,3 +20,6 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 GITHUB_TOKEN=your_github_token
 VERCEL_TOKEN=your_vercel_token
 ```
+
+## Creating a repo schema through the generate_repo_schema.py script to use for a github script import 
+py generate_repo_schema.py

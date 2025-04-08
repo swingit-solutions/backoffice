@@ -42,7 +42,7 @@ export default function LoginForm() {
         description: "Redirecting to dashboard...",
       })
 
-      router.push("/backoffice/dashboard")
+      router.push("/dashboard")
       router.refresh()
     } catch (error) {
       toast({
