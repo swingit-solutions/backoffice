@@ -4,6 +4,8 @@ import { ApiKeysList } from "@/components/api-keys/api-keys-list"
 import { PlusCircle } from "lucide-react"
 import { CreateApiKeyDialog } from "@/components/api-keys/create-api-key-dialog"
 
+export const dynamic = "force-dynamic"
+
 export default function ApiKeysPage() {
   return (
     <div className="flex flex-col gap-4">
@@ -31,4 +33,3 @@ export default function ApiKeysPage() {
     </div>
   )
 }
-

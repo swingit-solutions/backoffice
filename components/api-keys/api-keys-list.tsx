@@ -23,7 +23,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { toast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from "@/components/auth-provider"
 
 type ApiKey = {
   id: string
@@ -34,6 +35,7 @@ type ApiKey = {
   status: "active" | "revoked"
 }
 
+// Mock data for API keys
 const apiKeys: ApiKey[] = [
   {
     id: "1",
@@ -70,9 +72,12 @@ const apiKeys: ApiKey[] = [
 ]
 
 export function ApiKeysList() {
+  // Get auth context
+  const auth = useAuth()
   const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({})
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [keyToDelete, setKeyToDelete] = useState<ApiKey | null>(null)
+  const { toast } = useToast()
 
   const toggleKeyVisibility = (id: string) => {
     setVisibleKeys((prev) => ({
@@ -194,4 +199,3 @@ export function ApiKeysList() {
     </div>
   )
 }
-
