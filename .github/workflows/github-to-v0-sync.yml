@@ -1,0 +1,80 @@
+name: Sync GitHub Repository to v0 Chat
+
+on:
+  # Run on push to main branch
+  push:
+    branches: [ main ]
+  
+  # Run on pull request to main branch
+  pull_request:
+    branches: [ main ]
+    
+  # Allow manual triggering
+  workflow_dispatch:
+  
+  # Run on a schedule (weekly on Monday at midnight)
+  # Adjust this as needed - daily might be too frequent for large repos
+  schedule:
+    - cron: '0 0 * * 1'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for proper comparison
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm install @octokit/rest
+      
+      - name: Run sync script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node github-to-v0-sync.js
+      
+      - name: Upload sync output as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: v0-sync-output
+          path: v0-sync-output.md
+          retention-days: 7  # Keep for 7 days
+          
+      # Optional: Create a GitHub release with the sync output
+      # Only on main branch pushes and manual workflow runs
+      - name: Create Release
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v0-sync-${{ github.run_number }}
+          release_name: v0 Sync ${{ github.run_number }}
+          body: |
+            Automated v0 Chat sync for commit ${{ github.sha }}
+            
+            This release contains the latest sync output for v0 Chat.
+            Download the attached markdown file and paste its contents into v0 Chat to update your project.
+          draft: false
+          prerelease: false
+          
+      # Optional: Upload sync output as a release asset
+      - name: Upload Release Asset
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./v0-sync-output.md
+          asset_name: v0-sync-output.md
+          asset_content_type: text/markdown
