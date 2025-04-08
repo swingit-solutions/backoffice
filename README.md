@@ -22,4 +22,4 @@ VERCEL_TOKEN=your_vercel_token
 ```
 
 ## Creating a repo schema through the generate_repo_schema.py script to use for a github script import 
-py generate_repo_schema.py
+1. Run in terminal: `py generate_repo_schema.py`
