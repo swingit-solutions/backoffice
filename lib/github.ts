@@ -53,7 +53,10 @@ export async function cloneTemplateToNewRepo(templateOwner: string, templateRepo
     })
 
     // 2. For each file/directory in the template, copy to new repo
-    for (const item of templateContents) {
+    // Fix: Ensure templateContents is an array before iterating
+    const contentArray = Array.isArray(templateContents) ? templateContents : [templateContents]
+
+    for (const item of contentArray) {
       if (item.type === "file") {
         // Get file content
         const { data: fileData } = await octokit.repos.getContent({
@@ -102,7 +105,10 @@ async function copyDirectory(owner: string, templateRepo: string, newRepo: strin
   })
 
   // Copy each item in the directory
-  for (const item of contents) {
+  // Fix: Ensure contents is an array before iterating
+  const contentArray = Array.isArray(contents) ? contents : [contents]
+
+  for (const item of contentArray) {
     if (item.type === "file") {
       const { data: fileData } = await octokit.repos.getContent({
         owner,
@@ -142,4 +148,3 @@ async function copyDirectory(owner: string, templateRepo: string, newRepo: strin
  * 11. IMPORTANT: Copy the token immediately and store it securely
  * 12. Add this token as an environment variable named GITHUB_TOKEN in your Vercel project
  */
-
