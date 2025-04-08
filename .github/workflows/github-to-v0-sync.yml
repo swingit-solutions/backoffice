@@ -13,7 +13,6 @@ on:
   workflow_dispatch:
   
   # Run on a schedule (weekly on Monday at midnight)
-  # Adjust this as needed - daily might be too frequent for large repos
   schedule:
     - cron: '0 0 * * 1'
 
@@ -31,7 +30,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
+          # Removed the cache option that was causing the error
           
       - name: Install dependencies
         run: npm install @octokit/rest
