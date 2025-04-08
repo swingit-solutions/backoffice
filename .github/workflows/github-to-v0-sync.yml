@@ -36,9 +36,6 @@ jobs:
       - name: Install dependencies
         run: npm install @octokit/rest
       
-      - name: Rename script to use .mjs extension
-        run: mv github-to-v0-sync.js github-to-v0-sync.mjs
-      
       - name: Run sync script
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
