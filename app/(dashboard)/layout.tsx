@@ -1,6 +1,6 @@
 import type React from "react"
 import { Sidebar } from "@/components/sidebar"
-import { Header } from "@/components/header"
+import Header from "@/components/header" // Changed from { Header }
 
 export default function DashboardLayout({
   children,
@@ -17,4 +17,3 @@ export default function DashboardLayout({
     </div>
   )
 }
-
