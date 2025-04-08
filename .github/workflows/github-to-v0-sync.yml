@@ -30,15 +30,17 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          # Removed the cache option that was causing the error
           
       - name: Install dependencies
         run: npm install @octokit/rest
       
+      - name: Rename script to use .mjs extension
+        run: mv github-to-v0-sync.js github-to-v0-sync.mjs
+      
       - name: Run sync script
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node github-to-v0-sync.js
+        run: node github-to-v0-sync.mjs
       
       - name: Upload sync output as artifact
         uses: actions/upload-artifact@v4
