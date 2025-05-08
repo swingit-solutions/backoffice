@@ -2,6 +2,10 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 
+// Add export for dynamic middleware
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export async function middleware(req: NextRequest) {
   // Create a response object that we'll modify and return
   const res = NextResponse.next()

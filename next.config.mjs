@@ -5,18 +5,17 @@ const nextConfig = {
     domains: ['localhost'],
     unoptimized: true,
   },
-  experimental: {
-    // Remove these problematic options
-    // parallelServerBuildTraces: true,
-    // parallelServerCompiles: true,
-  },
-  // Force server-side rendering for all pages
-  output: 'standalone',
+  // Remove standalone output to avoid symlink issues on Windows
+  // output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // Explicitly set the export condition to ensure proper handling of dynamic routes
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/auth-helpers-nextjs'],
   },
 }
 
