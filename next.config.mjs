@@ -16,7 +16,12 @@ const nextConfig = {
   // Explicitly set the export condition to ensure proper handling of dynamic routes
   experimental: {
     serverComponentsExternalPackages: ['@supabase/auth-helpers-nextjs'],
+    // Add optimizeCss for production
+    optimizeCss: true,
   },
+  // Ensure CSS is properly processed in production
+  poweredByHeader: false,
+  generateEtags: false,
 }
 
 export default nextConfig

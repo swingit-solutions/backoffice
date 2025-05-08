@@ -16,14 +16,18 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [supabase] = useState(() => createClientComponentClient())
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      // Refresh the page on auth state change
-    })
+    try {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange(() => {
+        // Refresh the page on auth state change
+      })
 
-    return () => {
-      subscription.unsubscribe()
+      return () => {
+        subscription.unsubscribe()
+      }
+    } catch (error) {
+      console.error("Error in auth state change:", error)
     }
   }, [supabase])
 
