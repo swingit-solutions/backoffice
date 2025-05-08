@@ -1,0 +1,70 @@
+name: Sync GitHub Repository to v0 Chat
+
+on:
+  # Run on push to main branch
+  push:
+    branches: [ main ]
+  
+  # Run on pull request to main branch
+  pull_request:
+    branches: [ main ]
+    
+  # Allow manual triggering
+  workflow_dispatch:
+  
+  # Run on a schedule (weekly on Monday at midnight)
+  schedule:
+    - cron: '0 0 * * 1'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # This is needed for creating releases
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for proper comparison
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install @octokit/rest --legacy-peer-deps
+      
+      - name: List files (for debugging)
+        run: ls -la
+      
+      - name: Run sync script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node github-to-v0-sync.mjs
+      
+      - name: Upload sync output as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v0-sync-output
+          path: v0-sync-output.md
+          retention-days: 7  # Keep for 7 days
+          if-no-files-found: warn  # Don't fail if file not found, just warn
+          
+      # Create a release using the newer softprops/action-gh-release action
+      - name: Create Release
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v0-sync-${{ github.run_number }}
+          name: v0 Sync ${{ github.run_number }}
+          body: |
+            Automated v0 Chat sync for commit ${{ github.sha }}
+            
+            This release contains the latest sync output for v0 Chat.
+            Download the attached markdown file and paste its contents into v0 Chat to update your project.
+          files: v0-sync-output.md
+          fail_on_unmatched_files: false  # Don't fail if file not found
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
