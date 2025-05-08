@@ -50,12 +50,14 @@ export default async function DashboardPage() {
     // Regular user sees tenant stats
     const tenantId = userData.tenant_id
 
+    // Get network IDs first, then use them in the sites query
+    const { data: networkIds } = await supabase.from("affiliate_networks").select("id").eq("tenant_id", tenantId)
+
+    const networkIdsArray = networkIds?.map((network) => network.id) || []
+
     const [networksResponse, sitesResponse, usersResponse] = await Promise.all([
       supabase.from("affiliate_networks").select("count").eq("tenant_id", tenantId),
-      supabase
-        .from("affiliate_sites")
-        .select("count")
-        .in("network_id", supabase.from("affiliate_networks").select("id").eq("tenant_id", tenantId)),
+      supabase.from("affiliate_sites").select("count").in("network_id", networkIdsArray),
       supabase.from("users").select("count").eq("tenant_id", tenantId),
     ])
 
