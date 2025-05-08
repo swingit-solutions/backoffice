@@ -17,12 +17,17 @@ export async function middleware(req: NextRequest) {
 
     // Check if the request is for the login page
     const isLoginPage = req.nextUrl.pathname === "/"
+    const isRegisterPage = req.nextUrl.pathname === "/register"
+    const isAuthPage = isLoginPage || isRegisterPage
 
     // Define protected routes
     const isProtectedRoute =
       req.nextUrl.pathname.startsWith("/dashboard") ||
       req.nextUrl.pathname.startsWith("/api-keys") ||
-      req.nextUrl.pathname.startsWith("/sites")
+      req.nextUrl.pathname.startsWith("/sites") ||
+      req.nextUrl.pathname.startsWith("/networks") ||
+      req.nextUrl.pathname.startsWith("/users") ||
+      req.nextUrl.pathname.startsWith("/admin")
 
     // If user is not logged in and trying to access protected routes, redirect to login
     if (!session && isProtectedRoute) {
@@ -32,7 +37,7 @@ export async function middleware(req: NextRequest) {
     }
 
     // If user is logged in and trying to access login page, redirect to dashboard
-    if (session && isLoginPage) {
+    if (session && isAuthPage) {
       console.log("Session exists, redirecting to dashboard")
       const redirectUrl = new URL("/dashboard", req.url)
       return NextResponse.redirect(redirectUrl)

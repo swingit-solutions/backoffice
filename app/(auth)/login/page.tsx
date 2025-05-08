@@ -1,5 +1,8 @@
 "use client"
 
+// Mark this page as dynamic to prevent static generation
+export const dynamic = "force-dynamic"
+
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
