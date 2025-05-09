@@ -33,6 +33,7 @@ export default function RegisterPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -47,8 +48,11 @@ export default function RegisterPage() {
 
   async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true)
+    setFormError(null)
 
     try {
+      console.log("Starting registration process...")
+
       // 1. Create the user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
@@ -58,81 +62,99 @@ export default function RegisterPage() {
             first_name: data.firstName,
             last_name: data.lastName,
           },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
-      if (authError) throw authError
-
-      if (authData.user) {
-        // Get the free tier ID
-        const { data: freeTier, error: tierError } = await supabase
-          .from("subscription_tiers")
-          .select("id")
-          .eq("name", "Free")
-          .single()
-
-        if (tierError) {
-          console.error("Error fetching free tier:", tierError)
-        }
-
-        // 2. Create a tenant for the organization
-        const { data: tenantData, error: tenantError } = await supabase
-          .from("tenants")
-          .insert([
-            {
-              name: data.organizationName,
-              subscription_status: "trial",
-              subscription_tier_id: freeTier?.id || null,
-            },
-          ])
-          .select()
-
-        if (tenantError) {
-          console.error("Tenant creation error:", tenantError)
-          throw tenantError
-        }
-
-        // 3. Create a user record linked to the tenant
-        const { error: userError } = await supabase.from("users").insert([
-          {
-            auth_id: authData.user.id,
-            tenant_id: tenantData[0].id,
-            email: data.email,
-            first_name: data.firstName,
-            last_name: data.lastName,
-            role: "admin", // First user is the admin
-          },
-        ])
-
-        if (userError) {
-          console.error("User creation error:", userError)
-          throw userError
-        }
-
-        // 4. Create a default affiliate network
-        const { error: networkError } = await supabase.from("affiliate_networks").insert([
-          {
-            tenant_id: tenantData[0].id,
-            name: `${data.organizationName} Network`,
-            description: "Default affiliate network",
-          },
-        ])
-
-        if (networkError) {
-          console.error("Network creation error:", networkError)
-          throw networkError
-        }
-
-        toast({
-          title: "Registration successful",
-          description: "Your account has been created. Please check your email to verify your account.",
-        })
-
-        // Redirect to login page
-        router.push("/login")
+      if (authError) {
+        console.error("Auth error:", authError)
+        throw authError
       }
+
+      console.log("Auth successful, user created:", authData.user?.id)
+
+      if (!authData.user) {
+        throw new Error("User creation failed")
+      }
+
+      // Get the free tier ID
+      const { data: freeTier, error: tierError } = await supabase
+        .from("subscription_tiers")
+        .select("id")
+        .eq("name", "Free")
+        .single()
+
+      if (tierError) {
+        console.error("Error fetching free tier:", tierError)
+        // Continue with null tier ID instead of throwing
+      }
+
+      console.log("Free tier fetched:", freeTier?.id)
+
+      // 2. Create a tenant for the organization
+      const { data: tenantData, error: tenantError } = await supabase
+        .from("tenants")
+        .insert([
+          {
+            name: data.organizationName,
+            subscription_status: "trial",
+            subscription_tier_id: freeTier?.id || null,
+          },
+        ])
+        .select()
+
+      if (tenantError) {
+        console.error("Tenant creation error:", tenantError)
+        throw tenantError
+      }
+
+      console.log("Tenant created:", tenantData[0].id)
+
+      // 3. Create a user record linked to the tenant
+      const { error: userError } = await supabase.from("users").insert([
+        {
+          auth_id: authData.user.id,
+          tenant_id: tenantData[0].id,
+          email: data.email,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          role: "admin", // First user is the admin
+        },
+      ])
+
+      if (userError) {
+        console.error("User creation error:", userError)
+        throw userError
+      }
+
+      console.log("User record created")
+
+      // 4. Create a default affiliate network
+      const { error: networkError } = await supabase.from("affiliate_networks").insert([
+        {
+          tenant_id: tenantData[0].id,
+          name: `${data.organizationName} Network`,
+          description: "Default affiliate network",
+        },
+      ])
+
+      if (networkError) {
+        console.error("Network creation error:", networkError)
+        throw networkError
+      }
+
+      console.log("Network created")
+
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created. Please check your email to verify your account.",
+      })
+
+      // Redirect to login page
+      router.push("/login")
     } catch (error: any) {
       console.error("Registration error:", error)
+      setFormError(error.message || "There was a problem creating your account")
       toast({
         title: "Registration failed",
         description: error.message || "There was a problem creating your account",
@@ -159,6 +181,10 @@ export default function RegisterPage() {
           </CardHeader>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
+              {formError && (
+                <div className="p-3 bg-destructive/15 text-destructive rounded-md text-sm">{formError}</div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
