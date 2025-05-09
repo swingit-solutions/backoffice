@@ -12,10 +12,23 @@ const customFetch = (url: RequestInfo | URL, init?: RequestInit) => {
   })
 }
 
-export const supabase = () => {
+// Create a singleton instance of the Supabase client for client components
+export const supabase = createClientComponentClient<Database>({
+  options: {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+    global: {
+      fetch: customFetch,
+    },
+  },
+})
+
+// Export a function to get a fresh client if needed
+export const getSupabaseClient = () => {
   return createClientComponentClient<Database>({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     options: {
       auth: {
         persistSession: true,

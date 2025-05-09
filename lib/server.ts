@@ -14,9 +14,9 @@ const customFetch = (url: RequestInfo | URL, init?: RequestInit) => {
   })
 }
 
-export const createClient = cache(() => {
+// Create a cached version of the Supabase client for server components
+export const createServerClient = cache(() => {
   const cookieStore = cookies()
-
   return createServerComponentClient<Database>({
     cookies: () => cookieStore,
     options: {
@@ -26,3 +26,21 @@ export const createClient = cache(() => {
     },
   })
 })
+
+// For API routes and server actions that need the service role
+export const createServiceClient = () => {
+  return createServerComponentClient<Database>({
+    cookies: () => cookies(),
+    options: {
+      global: {
+        fetch: customFetch,
+      },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    },
+  })
+}
