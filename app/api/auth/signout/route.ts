@@ -1,4 +1,4 @@
-export const dynamic = "force_dynamic"
+export const dynamic = "force-dynamic"
 
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"

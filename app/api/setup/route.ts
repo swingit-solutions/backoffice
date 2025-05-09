@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import type { Database } from "@/types/supabase"
 
+// Force dynamic rendering for this API route
 export const dynamic = "force-dynamic"
 
 export async function POST(request: Request) {

@@ -13,13 +13,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Explicitly set the export condition to ensure proper handling of dynamic routes
+  // Remove optimizeCss option that's causing the deployment error
   experimental: {
     serverComponentsExternalPackages: ['@supabase/auth-helpers-nextjs'],
-    // Add optimizeCss for production
-    optimizeCss: true,
+    // optimizeCss: true, // Remove this line
   },
-  // Ensure CSS is properly processed in production
   poweredByHeader: false,
   generateEtags: false,
 }
