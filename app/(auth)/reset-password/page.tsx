@@ -15,6 +15,14 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 
+// Get the site URL for redirects
+const getSiteUrl = () => {
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.host}`
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || "https://backoffice.swingit.solutions"
+}
+
 // Form schema
 const resetSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -40,11 +48,7 @@ export default function ResetPasswordPage() {
 
     try {
       // Get the current site URL
-      const siteUrl =
-        typeof window !== "undefined"
-          ? `${window.location.protocol}//${window.location.host}`
-          : process.env.NEXT_PUBLIC_APP_URL || "https://backoffice.swingit.solutions"
-
+      const siteUrl = getSiteUrl()
       console.log("Using site URL for password reset:", siteUrl)
 
       // Use Supabase's password reset functionality with explicit site URL
