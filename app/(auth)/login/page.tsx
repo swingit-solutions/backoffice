@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,28 +43,27 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // Use our custom API route for login
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
+      // Use Supabase directly for authentication
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
       })
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Login failed")
+      if (error) {
+        console.error("Login error:", error)
+        throw new Error(error.message)
       }
 
       // Redirect to dashboard on successful login
+      toast({
+        title: "Login successful",
+        description: "Redirecting to dashboard...",
+      })
+
       router.push("/dashboard")
       router.refresh()
     } catch (error: any) {
+      console.error("Login error details:", error)
       toast({
         title: "Login failed",
         description: error.message || "Please check your credentials and try again",
@@ -101,7 +101,7 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                  <Link href="/reset-password" className="text-xs text-primary hover:underline">
                     Forgot password?
                   </Link>
                 </div>
