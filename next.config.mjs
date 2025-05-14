@@ -13,10 +13,13 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Remove optimizeCss option that's causing the deployment error
+  // Explicitly set the export condition to ensure proper handling of dynamic routes
   experimental: {
     serverComponentsExternalPackages: ['@supabase/auth-helpers-nextjs'],
-    // optimizeCss: true, // Remove this line
+  },
+  // Add environment variables that should be available to the client
+  env: {
+    NEXT_PUBLIC_APP_URL: 'https://backoffice.swingit.solutions',
   },
   poweredByHeader: false,
   generateEtags: false,

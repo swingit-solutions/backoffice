@@ -30,6 +30,7 @@ export default function LoginPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -41,18 +42,24 @@ export default function LoginPage() {
 
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true)
+    setErrorMessage(null)
 
     try {
+      console.log("Attempting login with email:", data.email)
+
       // Use Supabase directly for authentication
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       })
 
       if (error) {
         console.error("Login error:", error)
+        setErrorMessage(error.message)
         throw new Error(error.message)
       }
+
+      console.log("Login successful, user:", authData.user?.id)
 
       // Redirect to dashboard on successful login
       toast({
@@ -90,6 +97,12 @@ export default function LoginPage() {
           </CardHeader>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
+              {errorMessage && (
+                <div className="rounded-md bg-destructive/15 p-3">
+                  <p className="text-sm text-destructive">{errorMessage}</p>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" placeholder="you@example.com" {...form.register("email")} />

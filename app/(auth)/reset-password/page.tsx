@@ -39,12 +39,21 @@ export default function ResetPasswordPage() {
     setIsLoading(true)
 
     try {
-      // Use Supabase's password reset functionality
+      // Get the current site URL
+      const siteUrl =
+        typeof window !== "undefined"
+          ? `${window.location.protocol}//${window.location.host}`
+          : process.env.NEXT_PUBLIC_APP_URL || "https://backoffice.swingit.solutions"
+
+      console.log("Using site URL for password reset:", siteUrl)
+
+      // Use Supabase's password reset functionality with explicit site URL
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: `${siteUrl}/update-password`,
       })
 
       if (error) {
+        console.error("Password reset error:", error)
         throw error
       }
 
@@ -55,6 +64,7 @@ export default function ResetPasswordPage() {
         description: "Check your email for a password reset link",
       })
     } catch (error: any) {
+      console.error("Password reset error details:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to send reset email",
