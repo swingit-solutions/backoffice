@@ -35,6 +35,7 @@ export default function ResetPasswordPage() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const form = useForm<ResetFormValues>({
     resolver: zodResolver(resetSchema),
@@ -45,6 +46,7 @@ export default function ResetPasswordPage() {
 
   async function onSubmit(data: ResetFormValues) {
     setIsLoading(true)
+    setErrorMessage(null)
 
     try {
       // Get the current site URL
@@ -58,6 +60,7 @@ export default function ResetPasswordPage() {
 
       if (error) {
         console.error("Password reset error:", error)
+        setErrorMessage(error.message)
         throw error
       }
 
@@ -98,6 +101,11 @@ export default function ResetPasswordPage() {
           {!emailSent ? (
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
+                {errorMessage && (
+                  <div className="rounded-md bg-destructive/15 p-3">
+                    <p className="text-sm text-destructive">{errorMessage}</p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" type="email" placeholder="you@example.com" {...form.register("email")} />

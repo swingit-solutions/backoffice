@@ -18,14 +18,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 
-// Get the site URL for redirects
-const getSiteUrl = () => {
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.host}`
-  }
-  return process.env.NEXT_PUBLIC_APP_URL || "https://backoffice.swingit.solutions"
-}
-
 // Form schema
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -55,11 +47,10 @@ export default function LoginPage() {
     try {
       console.log("Attempting login with email:", data.email)
 
-      // Use Supabase directly for authentication with redirectTo option
+      // Use Supabase directly for authentication
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
-        // No options needed here; redirectTo is not supported for signInWithPassword
       })
 
       if (error) {
