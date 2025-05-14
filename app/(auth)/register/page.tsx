@@ -91,59 +91,35 @@ export default function RegisterPage() {
 
       console.log("Free tier fetched:", freeTier?.id)
 
-      // 2. Create a tenant for the organization
-      const { data: tenantData, error: tenantError } = await supabase
-        .from("tenants")
-        .insert([
-          {
+      // 2. Create a tenant for the organization - Using the service role client
+      // Get the service role client from the server
+      const response = await fetch("/api/auth/service-role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "create_tenant",
+          data: {
             name: data.organizationName,
             subscription_status: "trial",
             subscription_tier_id: freeTier?.id || null,
+            user_id: authData.user.id,
+            email: data.email,
+            first_name: data.firstName,
+            last_name: data.lastName,
           },
-        ])
-        .select()
+        }),
+      })
 
-      if (tenantError) {
-        console.error("Tenant creation error:", tenantError)
-        throw tenantError
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("Tenant creation error:", errorData)
+        throw new Error(errorData.message || "Failed to create tenant")
       }
 
-      console.log("Tenant created:", tenantData[0].id)
-
-      // 3. Create a user record linked to the tenant
-      const { error: userError } = await supabase.from("users").insert([
-        {
-          auth_id: authData.user.id,
-          tenant_id: tenantData[0].id,
-          email: data.email,
-          first_name: data.firstName,
-          last_name: data.lastName,
-          role: "admin", // First user is the admin
-        },
-      ])
-
-      if (userError) {
-        console.error("User creation error:", userError)
-        throw userError
-      }
-
-      console.log("User record created")
-
-      // 4. Create a default affiliate network
-      const { error: networkError } = await supabase.from("affiliate_networks").insert([
-        {
-          tenant_id: tenantData[0].id,
-          name: `${data.organizationName} Network`,
-          description: "Default affiliate network",
-        },
-      ])
-
-      if (networkError) {
-        console.error("Network creation error:", networkError)
-        throw networkError
-      }
-
-      console.log("Network created")
+      const result = await response.json()
+      console.log("Registration completed successfully:", result)
 
       toast({
         title: "Registration successful",
