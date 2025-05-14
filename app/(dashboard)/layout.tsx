@@ -6,8 +6,7 @@ export const dynamic = "force-dynamic"
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { usePathname } from "next/navigation"
-import { redirect } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 import { supabase } from "@/lib/supabase/client"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -19,8 +18,10 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -34,9 +35,7 @@ export default function DashboardLayout({
 
         if (!session) {
           // Not logged in, redirect to login page
-          if (pathname !== "/login" && pathname !== "/register") {
-            redirect("/login")
-          }
+          router.push("/login")
           setIsLoading(false)
           return
         }
@@ -61,7 +60,15 @@ export default function DashboardLayout({
           role: userData.role,
         })
 
+        // Check if user is super_admin or admin
         setIsSuperAdmin(userData.role === "super_admin")
+        setIsAdmin(userData.role === "super_admin" || userData.role === "admin")
+
+        // Redirect if trying to access admin pages without proper role
+        if (pathname.startsWith("/admin") && userData.role !== "super_admin") {
+          router.push("/dashboard")
+        }
+
         setIsLoading(false)
       } catch (error) {
         console.error("Error in auth flow:", error)
@@ -70,7 +77,7 @@ export default function DashboardLayout({
     }
 
     getUser()
-  }, [pathname])
+  }, [pathname, router])
 
   // Close mobile menu when path changes
   useEffect(() => {
@@ -101,7 +108,7 @@ export default function DashboardLayout({
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <Sidebar isSuperAdmin={isSuperAdmin} />
+        <Sidebar isSuperAdmin={isSuperAdmin} isAdmin={isAdmin} />
       </div>
 
       {/* Main content */}

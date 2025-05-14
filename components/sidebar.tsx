@@ -2,101 +2,105 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart, Building, Globe, Home, LayoutDashboard, Settings, Users } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
+import { BarChart3, Globe, Home, Settings, Users, Building, LogOut } from "lucide-react"
+
+import { cn } from "@/lib/utils"
 
 interface SidebarProps {
   isSuperAdmin?: boolean
+  isAdmin?: boolean
 }
 
-export function Sidebar({ isSuperAdmin = false }: SidebarProps) {
+export function Sidebar({ isSuperAdmin = false, isAdmin = false }: SidebarProps) {
   const pathname = usePathname()
 
+  const navItems = [
+    {
+      title: "Dashboard",
+      href: "/dashboard",
+      icon: Home,
+      active: pathname === "/dashboard",
+    },
+    {
+      title: "Networks",
+      href: "/networks",
+      icon: Globe,
+      active: pathname.startsWith("/networks"),
+    },
+    {
+      title: "Sites",
+      href: "/sites",
+      icon: Globe,
+      active: pathname.startsWith("/sites"),
+    },
+    {
+      title: "Analytics",
+      href: "/analytics",
+      icon: BarChart3,
+      active: pathname.startsWith("/analytics"),
+    },
+    {
+      title: "Users",
+      href: "/users",
+      icon: Users,
+      active: pathname.startsWith("/users"),
+      show: isAdmin, // Show for both admin and super_admin
+    },
+    {
+      title: "Settings",
+      href: "/settings",
+      icon: Settings,
+      active: pathname.startsWith("/settings"),
+    },
+    // Super admin only sections
+    {
+      title: "Organizations",
+      href: "/admin/tenants",
+      icon: Building,
+      active: pathname.startsWith("/admin/tenants"),
+      show: isSuperAdmin,
+    },
+    {
+      title: "System Settings",
+      href: "/admin/settings",
+      icon: Settings,
+      active: pathname.startsWith("/admin/settings"),
+      show: isSuperAdmin,
+    },
+  ]
+
   return (
-    <div className="flex h-full w-[240px] flex-col border-r bg-background">
-      <div className="flex h-14 items-center px-4 py-2">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Globe className="h-6 w-6" />
-          <span className="text-lg">Affiliate Hub</span>
+    <div className="flex h-full w-64 flex-col border-r bg-background">
+      <div className="flex h-14 items-center border-b px-4">
+        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+          <Globe className="h-5 w-5" />
+          <span>Affiliate Hub</span>
         </Link>
       </div>
-      <Separator />
       <div className="flex-1 overflow-auto py-2">
-        <nav className="grid gap-1 px-2">
-          <Button asChild variant={pathname === "/dashboard" ? "secondary" : "ghost"} className="justify-start">
-            <Link href="/dashboard">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              Dashboard
-            </Link>
-          </Button>
-
-          <Button asChild variant={pathname.startsWith("/networks") ? "secondary" : "ghost"} className="justify-start">
-            <Link href="/networks">
-              <Globe className="mr-2 h-4 w-4" />
-              Networks
-            </Link>
-          </Button>
-
-          <Button asChild variant={pathname.startsWith("/sites") ? "secondary" : "ghost"} className="justify-start">
-            <Link href="/sites">
-              <Home className="mr-2 h-4 w-4" />
-              Sites
-            </Link>
-          </Button>
-
-          <Button asChild variant={pathname.startsWith("/users") ? "secondary" : "ghost"} className="justify-start">
-            <Link href="/users">
-              <Users className="mr-2 h-4 w-4" />
-              Users
-            </Link>
-          </Button>
-
-          <Button asChild variant={pathname.startsWith("/analytics") ? "secondary" : "ghost"} className="justify-start">
-            <Link href="/analytics">
-              <BarChart className="mr-2 h-4 w-4" />
-              Analytics
-            </Link>
-          </Button>
-
-          {isSuperAdmin && (
-            <>
-              <Separator className="my-2" />
-              <div className="px-2 py-1">
-                <h4 className="mb-1 text-xs font-semibold text-muted-foreground">Admin</h4>
-              </div>
-              <Button
-                asChild
-                variant={pathname.startsWith("/admin/tenants") ? "secondary" : "ghost"}
-                className="justify-start"
+        <nav className="grid items-start px-2 text-sm">
+          {navItems
+            .filter((item) => item.show !== false)
+            .map((item, index) => (
+              <Link
+                key={index}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-foreground",
+                  item.active ? "bg-muted text-foreground" : "transparent",
+                )}
               >
-                <Link href="/admin/tenants">
-                  <Building className="mr-2 h-4 w-4" />
-                  Tenants
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant={pathname.startsWith("/admin/settings") ? "secondary" : "ghost"}
-                className="justify-start"
-              >
-                <Link href="/admin/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Link>
-              </Button>
-            </>
-          )}
+                <item.icon className="h-4 w-4" />
+                <span>{item.title}</span>
+              </Link>
+            ))}
         </nav>
       </div>
-      <Separator />
-      <div className="p-4">
-        <Button asChild variant="outline" className="w-full justify-start">
-          <Link href="/settings">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </Link>
-        </Button>
+      <div className="mt-auto border-t p-4">
+        <Link href="/api/auth/signout" className="flex w-full items-center gap-3 rounded-lg bg-muted px-3 py-2 text-sm">
+          <LogOut className="h-4 w-4" />
+          <span>Log out</span>
+        </Link>
       </div>
     </div>
   )
