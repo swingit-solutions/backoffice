@@ -18,7 +18,7 @@ import { useToast } from "@/components/ui/use-toast"
 // Get the site URL for redirects
 const getSiteUrl = () => {
   if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.host}`
+    return window.location.origin
   }
   return process.env.NEXT_PUBLIC_APP_URL || "https://backoffice.swingit.solutions"
 }

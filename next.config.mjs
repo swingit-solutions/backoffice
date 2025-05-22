@@ -15,7 +15,7 @@ const nextConfig = {
   },
   // Explicitly set the export condition to ensure proper handling of dynamic routes
   experimental: {
-    serverComponentsExternalPackages: ['@supabase/auth-helpers-nextjs'],
+    serverComponentsExternalPackages: ['@supabase/ssr @supabase/supabase-js'],
   },
   // Add environment variables that should be available to the client
   env: {

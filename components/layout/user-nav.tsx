@@ -1,9 +1,7 @@
 "use client"
 
-import Link from "next/link"
-import { LogOut, Settings, User } from "lucide-react"
-
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useRouter } from "next/navigation"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -14,63 +12,43 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { formatRole } from "@/lib/utils"
+import { useAuth } from "@/components/auth-provider"
 
-interface UserNavProps {
-  user: {
-    name?: string
-    email: string
-    role: string
+export function UserNav() {
+  const { user, signOut } = useAuth()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/")
   }
-}
 
-export function UserNav({ user }: UserNavProps) {
-  const initials = user.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-    : user.email[0].toUpperCase()
+  const userInitials = user?.email ? user.email.substring(0, 2).toUpperCase() : "U"
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarFallback>{initials}</AvatarFallback>
+            <AvatarImage src="/placeholder-user.jpg" alt={user?.email || "User"} />
+            <AvatarFallback>{userInitials}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            {user.name && <p className="text-sm font-medium leading-none">{user.name}</p>}
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-            <p className="text-xs leading-none text-muted-foreground">{formatRole(user.role)}</p>
+            <p className="text-sm font-medium leading-none">{user?.email}</p>
+            <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
-            <Link href="/profile">
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings">
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </Link>
-          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/profile")}>Profile</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/settings")}>Settings</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/api/auth/signout">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </Link>
-        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSignOut}>Log out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

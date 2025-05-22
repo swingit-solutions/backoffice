@@ -23,7 +23,7 @@ The CORS configuration is implemented in these files:
 - `lib/supabase/client.ts` - Client-side Supabase client with custom fetch
 - `lib/supabase/server.ts` - Server-side Supabase client with custom fetch
 - `app/api/cors/route.ts` - API route for handling CORS preflight requests
-- `middleware.ts` - Next.js middleware that adds CORS headers
+- `lib/supabase/middleware.ts` - Next.js middleware that adds CORS headers
 
 ## Allowed Origins
 

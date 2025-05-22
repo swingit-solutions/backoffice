@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Globe } from "lucide-react"
 import { useForm } from "react-hook-form"
@@ -15,10 +15,15 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 
-// Form schema with password confirmation
-const updatePasswordSchema = z
+// Form schema
+const passwordSchema = z
   .object({
-    password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+    password: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters" })
+      .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
+      .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter" })
+      .regex(/[0-9]/, { message: "Password must contain at least one number" }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -26,69 +31,77 @@ const updatePasswordSchema = z
     path: ["confirmPassword"],
   })
 
-type UpdatePasswordFormValues = z.infer<typeof updatePasswordSchema>
+type PasswordFormValues = z.infer<typeof passwordSchema>
 
 export default function UpdatePasswordPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSessionLoaded, setIsSessionLoaded] = useState(false)
 
-  const form = useForm<UpdatePasswordFormValues>({
-    resolver: zodResolver(updatePasswordSchema),
+  const form = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordSchema),
     defaultValues: {
       password: "",
       confirmPassword: "",
     },
   })
 
-  // Check if we have a valid session on page load
+  // Check if user is authenticated with a recovery token
   useEffect(() => {
     const checkSession = async () => {
       const { data, error } = await supabase.auth.getSession()
 
-      if (error || !data.session) {
-        console.error("No valid session for password update:", error)
-        setError("Your password reset link has expired or is invalid. Please request a new one.")
+      if (error) {
+        console.error("Session error:", error)
+        setErrorMessage("Unable to verify your session. Please try the reset password process again.")
+        return
+      }
+
+      setIsSessionLoaded(true)
+
+      // If no session or no access token, redirect to login
+      if (!data.session) {
+        toast({
+          title: "Session expired",
+          description: "Your password reset session has expired. Please try again.",
+          variant: "destructive",
+        })
+        router.push("/reset-password")
       }
     }
 
     checkSession()
-  }, [])
+  }, [router, toast])
 
-  async function onSubmit(data: UpdatePasswordFormValues) {
+  async function onSubmit(data: PasswordFormValues) {
     setIsLoading(true)
-    setError(null)
+    setErrorMessage(null)
 
     try {
-      console.log("Attempting to update password")
-
-      // Update the user's password
       const { error } = await supabase.auth.updateUser({
         password: data.password,
       })
 
       if (error) {
         console.error("Password update error:", error)
+        setErrorMessage(error.message)
         throw error
       }
 
       // Show success message
-      setIsSuccess(true)
       toast({
         title: "Password updated",
-        description: "Your password has been successfully updated",
+        description: "Your password has been successfully updated.",
       })
 
-      // Redirect to login after a delay
+      // Redirect to login page
       setTimeout(() => {
         router.push("/login")
-      }, 3000)
+      }, 2000)
     } catch (error: any) {
       console.error("Password update error details:", error)
-      setError(error.message || "Failed to update password")
       toast({
         title: "Error",
         description: error.message || "Failed to update password",
@@ -97,6 +110,20 @@ export default function UpdatePasswordPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (!isSessionLoaded) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+        <div className="w-full max-w-md">
+          <div className="mb-8 flex flex-col items-center text-center">
+            <Globe className="h-12 w-12 text-primary" />
+            <h1 className="mt-2 text-3xl font-bold">Affiliate Hub</h1>
+            <p className="text-muted-foreground">Verifying your session...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -110,64 +137,45 @@ export default function UpdatePasswordPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Set New Password</CardTitle>
-            <CardDescription>
-              {isSuccess ? "Your password has been updated successfully" : "Create a new password for your account"}
-            </CardDescription>
+            <CardTitle>Create New Password</CardTitle>
+            <CardDescription>Please enter and confirm your new password</CardDescription>
           </CardHeader>
-          {error ? (
-            <CardContent>
-              <div className="rounded-md bg-destructive/15 p-3">
-                <p className="text-sm text-destructive">{error}</p>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <CardContent className="space-y-4">
+              {errorMessage && (
+                <div className="rounded-md bg-destructive/15 p-3">
+                  <p className="text-sm text-destructive">{errorMessage}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="password">New Password</Label>
+                <Input id="password" type="password" {...form.register("password")} />
+                {form.formState.errors.password && (
+                  <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
+                )}
               </div>
-              <div className="mt-4 text-center">
-                <Link href="/reset-password" className="text-sm text-primary hover:underline">
-                  Request a new password reset link
-                </Link>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input id="confirmPassword" type="password" {...form.register("confirmPassword")} />
+                {form.formState.errors.confirmPassword && (
+                  <p className="text-sm text-destructive">{form.formState.errors.confirmPassword.message}</p>
+                )}
               </div>
             </CardContent>
-          ) : isSuccess ? (
-            <CardContent>
-              <p className="text-center text-sm text-muted-foreground">
-                You will be redirected to the login page in a few seconds...
-              </p>
-            </CardContent>
-          ) : (
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">New Password</Label>
-                  <Input id="password" type="password" {...form.register("password")} />
-                  {form.formState.errors.password && (
-                    <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input id="confirmPassword" type="password" {...form.register("confirmPassword")} />
-                  {form.formState.errors.confirmPassword && (
-                    <p className="text-sm text-destructive">{form.formState.errors.confirmPassword.message}</p>
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Updating..." : "Update Password"}
-                </Button>
-              </CardFooter>
-            </form>
-          )}
+            <CardFooter>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Updating..." : "Update Password"}
+              </Button>
+            </CardFooter>
+          </form>
         </Card>
 
-        {!error && !isSuccess && (
-          <div className="mt-4 text-center text-sm">
-            Remember your password?{" "}
-            <Link href="/login" className="text-primary hover:underline">
-              Back to login
-            </Link>
-          </div>
-        )}
+        <div className="mt-4 text-center text-sm">
+          Remember your password?{" "}
+          <Link href="/login" className="text-primary hover:underline">
+            Back to login
+          </Link>
+        </div>
       </div>
     </div>
   )

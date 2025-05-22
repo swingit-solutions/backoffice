@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
+import { createServerClient } from "@supabase/ssr"
 
 // Add export for dynamic middleware
 export const dynamic = "force-dynamic"
@@ -12,7 +12,41 @@ export async function middleware(req: NextRequest) {
 
   try {
     // Create a Supabase client
-    const supabase = createMiddlewareClient({ req, res })
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return req.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            req.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+            res.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+          },
+          remove(name: string, options: any) {
+            req.cookies.set({
+              name,
+              value: "",
+              ...options,
+            })
+            res.cookies.set({
+              name,
+              value: "",
+              ...options,
+            })
+          },
+        },
+      },
+    )
 
     // Refresh session if expired
     const {
@@ -48,7 +82,19 @@ export async function middleware(req: NextRequest) {
     }
 
     // For all other cases, continue with the request
-    return res
+    const { pathname } = req.nextUrl
+
+    // Add the site URL to the request headers if it's not already there
+    const requestHeaders = new Headers(req.headers)
+    if (!requestHeaders.has("x-site-url")) {
+      requestHeaders.set("x-site-url", process.env.NEXT_PUBLIC_APP_URL || "https://backoffice.swingit.solutions")
+    }
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    })
   } catch (error) {
     console.error("Middleware error:", error)
     // If there's an error, just continue with the request to avoid breaking the app
