@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -33,34 +33,26 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Check if the request is for auth pages
-  const isLoginPage = request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/login"
-  const isRegisterPage = request.nextUrl.pathname === "/register"
-  const isResetPasswordPage = request.nextUrl.pathname === "/reset-password"
-  const isUpdatePasswordPage = request.nextUrl.pathname === "/update-password"
-  const isAuthPage = isLoginPage || isRegisterPage || isResetPasswordPage || isUpdatePasswordPage
+  const { pathname } = request.nextUrl
 
   // Define protected routes
-  const isProtectedRoute =
-    request.nextUrl.pathname.startsWith("/dashboard") ||
-    request.nextUrl.pathname.startsWith("/api-keys") ||
-    request.nextUrl.pathname.startsWith("/sites") ||
-    request.nextUrl.pathname.startsWith("/networks") ||
-    request.nextUrl.pathname.startsWith("/users") ||
-    request.nextUrl.pathname.startsWith("/admin")
+  const protectedRoutes = ["/dashboard", "/sites", "/networks", "/users", "/admin"]
+  const authRoutes = ["/login", "/register", "/reset-password", "/update-password"]
 
-  // If user is not logged in and trying to access protected routes, redirect to login
+  // Check if the current path is a protected route
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route))
+
+  // If user is not authenticated and trying to access protected route
   if (!user && isProtectedRoute) {
-    console.log("No user session, redirecting to login page")
-    const redirectUrl = new URL("/", request.url)
+    const redirectUrl = new URL("/login", request.url)
+    redirectUrl.searchParams.set("redirectTo", pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // If user is logged in and trying to access login/register pages, redirect to dashboard
-  if (user && (isLoginPage || isRegisterPage)) {
-    console.log("User session exists, redirecting to dashboard")
-    const redirectUrl = new URL("/dashboard", request.url)
-    return NextResponse.redirect(redirectUrl)
+  // If user is authenticated and trying to access auth routes, redirect to dashboard
+  if (user && isAuthRoute) {
+    return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
@@ -69,12 +61,7 @@ export async function middleware(request: NextRequest) {
   //    const myNewResponse = NextResponse.next({ request })
   // 2. Copy over the cookies, like so:
   //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
+  // 3. Change the myNewResponse object instead of the supabaseResponse object
 
   return supabaseResponse
 }
@@ -86,8 +73,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * Feel free to modify this pattern to include more paths.
      */
-    "/((?!_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 }

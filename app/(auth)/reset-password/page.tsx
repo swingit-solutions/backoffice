@@ -1,77 +1,53 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import Link from "next/link"
-import { Globe } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-
 import { createClient } from "@/lib/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/use-toast"
-
-// Get the site URL for redirects
-const getSiteUrl = () => {
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.host}`
-  }
-  return process.env.NEXT_PUBLIC_APP_URL || "https://backoffice.swingit.solutions"
-}
-
-// Form schema
-const resetSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-})
-
-type ResetFormValues = z.infer<typeof resetSchema>
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
 
 export default function ResetPasswordPage() {
-  const { toast } = useToast()
+  const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [emailSent, setEmailSent] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSubmitted, setIsSubmitted] = useState(false)
+  const { toast } = useToast()
+  const supabase = createClient()
 
-  const form = useForm<ResetFormValues>({
-    resolver: zodResolver(resetSchema),
-    defaultValues: {
-      email: "",
-    },
-  })
-
-  async function onSubmit(data: ResetFormValues) {
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
     setIsLoading(true)
-    setErrorMessage(null)
 
     try {
-      const siteUrl = getSiteUrl()
-      console.log("Using site URL for password reset:", siteUrl)
-
-      const supabase = createClient()
-
-      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${siteUrl}/update-password`,
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`,
       })
 
       if (error) {
-        console.error("Password reset error:", error)
-        setErrorMessage(error.message)
-        throw error
+        console.error("Reset password error:", error)
+        toast({
+          title: "Reset Failed",
+          description: error.message,
+          variant: "destructive",
+        })
+        return
       }
 
-      setEmailSent(true)
+      console.log("Reset password email sent to:", email)
+      setIsSubmitted(true)
       toast({
-        title: "Reset email sent",
-        description: "Check your email for a password reset link",
+        title: "Reset Email Sent",
+        description: "Please check your email for password reset instructions.",
       })
-    } catch (error: any) {
-      console.error("Password reset error details:", error)
+    } catch (error) {
+      console.error("Unexpected reset password error:", error)
       toast({
-        title: "Error",
-        description: error.message || "Failed to send reset email",
+        title: "Reset Failed",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -79,61 +55,64 @@ export default function ResetPasswordPage() {
     }
   }
 
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <Globe className="h-12 w-12 text-primary" />
-          <h1 className="mt-2 text-3xl font-bold">Affiliate Hub</h1>
-          <p className="text-muted-foreground">Reset your password</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Reset Password</CardTitle>
-            <CardDescription>
-              {emailSent ? "Check your email for a reset link" : "Enter your email to receive a password reset link"}
-            </CardDescription>
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-green-600">Check Your Email</CardTitle>
+            <CardDescription>We've sent password reset instructions to {email}</CardDescription>
           </CardHeader>
-          {!emailSent ? (
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <CardContent className="space-y-4">
-                {errorMessage && (
-                  <div className="rounded-md bg-destructive/15 p-3">
-                    <p className="text-sm text-destructive">{errorMessage}</p>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="you@example.com" {...form.register("email")} />
-                  {form.formState.errors.email && (
-                    <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send Reset Link"}
-                </Button>
-              </CardFooter>
-            </form>
-          ) : (
-            <CardContent className="space-y-4">
-              <p className="text-center text-sm text-muted-foreground">
-                We've sent a password reset link to your email. Please check your inbox and follow the instructions.
-              </p>
-              <p className="text-center text-sm text-muted-foreground">The link will expire in 24 hours.</p>
-            </CardContent>
-          )}
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600 text-center">
+              Click the link in the email to reset your password. The link will expire in 1 hour.
+            </p>
+            <div className="flex flex-col space-y-2">
+              <Button onClick={() => setIsSubmitted(false)} variant="outline">
+                Send Another Email
+              </Button>
+              <Button asChild>
+                <Link href="/login">Back to Login</Link>
+              </Button>
+            </div>
+          </CardContent>
         </Card>
-
-        <div className="mt-4 text-center text-sm">
-          Remember your password?{" "}
-          <Link href="/login" className="text-primary hover:underline">
-            Back to login
-          </Link>
-        </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
+          <CardDescription>Enter your email address and we'll send you a link to reset your password</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Sending..." : "Send Reset Link"}
+            </Button>
+          </form>
+          <div className="mt-4 text-center">
+            <Link href="/login" className="text-sm text-blue-600 hover:underline">
+              Back to Login
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

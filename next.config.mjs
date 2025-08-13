@@ -1,8 +1,6 @@
-import type { NextConfig } from 'next'
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['@supabase/auth-helpers-nextjs', '@supabase/supabase-js'],
+    serverComponentsExternalPackages: ['@supabase/ssr', '@supabase/supabase-js'],
   },
   output: 'standalone',
   eslint: {

@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/server"
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get("code")
   // if "next" is in param, use it as the redirect URL
