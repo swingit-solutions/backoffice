@@ -1,8 +1,3 @@
-/**
- * Role definitions and utilities for the application
- */
-
-// Define all available roles
 export type UserRole = "super_admin" | "admin" | "editor" | "viewer"
 
 // Map of role names to display names

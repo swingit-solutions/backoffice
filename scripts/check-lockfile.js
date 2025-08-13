@@ -1,8 +1,3 @@
-/**
- * This script checks if package.json and pnpm-lock.yaml are in sync.
- * If not, it automatically runs pnpm install --no-frozen-lockfile to update the lock file.
- */
-
 const fs = require("fs")
 const { execSync } = require("child_process")
 const path = require("path")

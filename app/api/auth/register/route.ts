@@ -5,10 +5,6 @@ export async function POST(request: Request) {
   try {
     const { userId, email, firstName, lastName, organizationName } = await request.json()
 
-    if (!userId || !email || !firstName || !lastName || !organizationName) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
-
     const supabase = createServiceClient()
 
     // Get the free tier ID
@@ -20,9 +16,12 @@ export async function POST(request: Request) {
 
     if (tierError) {
       console.error("Error fetching free tier:", tierError)
+      // Continue with null tier ID instead of throwing
     }
 
-    // Create tenant
+    console.log("Free tier fetched:", freeTier?.id)
+
+    // Create a tenant for the organization
     const { data: tenant, error: tenantError } = await supabase
       .from("tenants")
       .insert({
@@ -34,37 +33,32 @@ export async function POST(request: Request) {
       .single()
 
     if (tenantError) {
-      console.error("Error creating tenant:", tenantError)
-      throw new Error("Failed to create organization")
+      console.error("Tenant creation error:", tenantError)
+      throw new Error("Failed to create tenant")
     }
 
+    console.log("Tenant created:", tenant.id)
+
     // Create user record
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .insert({
-        auth_id: userId,
-        tenant_id: tenant.id,
-        email: email,
-        first_name: firstName,
-        last_name: lastName,
-        role: "admin",
-        is_active: true,
-      })
-      .select()
-      .single()
+    const { error: userError } = await supabase.from("users").insert({
+      auth_id: userId,
+      email: email,
+      first_name: firstName,
+      last_name: lastName,
+      role: "admin", // First user becomes admin
+      tenant_id: tenant.id,
+    })
 
     if (userError) {
-      console.error("Error creating user:", userError)
+      console.error("User creation error:", userError)
       throw new Error("Failed to create user record")
     }
 
-    return NextResponse.json({
-      success: true,
-      tenant: tenant,
-      user: user,
-    })
+    console.log("User record created successfully")
+
+    return NextResponse.json({ success: true, tenantId: tenant.id })
   } catch (error: any) {
-    console.error("Registration error:", error)
-    return NextResponse.json({ error: error.message || "Registration failed" }, { status: 500 })
+    console.error("Registration API error:", error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

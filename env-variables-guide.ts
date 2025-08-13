@@ -1,14 +1,3 @@
-/**
- * Environment Variables Guide
- *
- * This file explains the environment variables used in the application.
- * Add these to your .env.local file.
- */
-
-// NEXT_PUBLIC_APP_URL
-// The URL where your application is hosted
-// For local development: http://localhost:3000
-// For production: https://your-domain.com
 const NEXT_PUBLIC_APP_URL = "http://localhost:3000"
 
 // ALLOWED_ORIGIN

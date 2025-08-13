@@ -1,135 +1,190 @@
-// Mark this page as dynamic to prevent static generation
-export const dynamic = "force-dynamic"
-
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
-import Link from "next/link"
-import { redirect } from "next/navigation"
-import { UserPlus } from "lucide-react"
-
-import { formatDate, formatRole } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/server"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Plus, Mail, MoreHorizontal } from "lucide-react"
 
 export default async function UsersPage() {
-  const supabase = createServerComponentClient({ cookies })
+  const supabase = await createClient()
 
-  // Get the current session
+  // Get user data
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!session) {
-    redirect("/login")
+  if (!user) {
+    return <div>Not authenticated</div>
   }
 
-  // Get the user details
-  const { data: userData } = await supabase.from("users").select("*").eq("auth_id", session.user.id).single()
+  // Mock data for now - replace with actual queries
+  const users = [
+    {
+      id: 1,
+      name: "John Smith",
+      email: "john@example.com",
+      role: "admin",
+      status: "active",
+      lastLogin: "2 hours ago",
+      sites: 3,
+    },
+    {
+      id: 2,
+      name: "Sarah Johnson",
+      email: "sarah@example.com",
+      role: "editor",
+      status: "active",
+      lastLogin: "1 day ago",
+      sites: 2,
+    },
+    {
+      id: 3,
+      name: "Mike Davis",
+      email: "mike@example.com",
+      role: "viewer",
+      status: "inactive",
+      lastLogin: "1 week ago",
+      sites: 1,
+    },
+    {
+      id: 4,
+      name: "Emily Brown",
+      email: "emily@example.com",
+      role: "editor",
+      status: "active",
+      lastLogin: "5 hours ago",
+      sites: 4,
+    },
+  ]
 
-  if (!userData) {
-    redirect("/login")
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "bg-red-100 text-red-800"
+      case "editor":
+        return "bg-blue-100 text-blue-800"
+      case "viewer":
+        return "bg-gray-100 text-gray-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
   }
 
-  // Get users based on user role
-  let usersQuery = supabase.from("users").select("*, tenants(name)").order("created_at", { ascending: false })
-
-  // If not super admin, filter by tenant
-  if (userData.role !== "super_admin") {
-    usersQuery = usersQuery.eq("tenant_id", userData.tenant_id)
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-100 text-green-800"
+      case "inactive":
+        return "bg-red-100 text-red-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
   }
 
-  const { data: users, error } = await usersQuery
-
-  if (error) {
-    console.error("Error fetching users:", error)
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-          <p className="text-muted-foreground">Manage users and permissions</p>
+          <p className="text-muted-foreground">Manage user accounts and permissions for your affiliate network.</p>
         </div>
-
-        <Button asChild>
-          <Link href="/users/invite">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Invite User
-          </Link>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Invite User
         </Button>
       </div>
 
-      {users && users.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {users.map((user) => (
-            <Card key={user.id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
+      <div className="grid gap-6">
+        {users.map((user) => (
+          <Card key={user.id} className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
                   <Avatar>
-                    <AvatarFallback>
-                      {user.first_name && user.last_name
-                        ? `${user.first_name[0]}${user.last_name[0]}`
-                        : user.email[0].toUpperCase()}
-                    </AvatarFallback>
+                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle>
-                      {user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.email}
-                    </CardTitle>
-                    <CardDescription>{user.email}</CardDescription>
+                    <CardTitle className="text-lg">{user.name}</CardTitle>
+                    <CardDescription className="flex items-center space-x-2">
+                      <Mail className="h-3 w-3" />
+                      <span>{user.email}</span>
+                    </CardDescription>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-muted-foreground">Role</div>
-                  <div className="font-medium">{formatRole(user.role)}</div>
-
-                  <div className="text-muted-foreground">Status</div>
-                  <div className="font-medium">{user.is_active ? "Active" : "Inactive"}</div>
-
-                  {userData.role === "super_admin" && (
-                    <>
-                      <div className="text-muted-foreground">Organization</div>
-                      <div className="font-medium">{user.tenants?.name || "N/A"}</div>
-                    </>
-                  )}
-
-                  <div className="text-muted-foreground">Joined</div>
-                  <div className="font-medium">{formatDate(user.created_at)}</div>
+                <div className="flex items-center space-x-2">
+                  <Badge className={getRoleColor(user.role)}>{user.role}</Badge>
+                  <Badge className={getStatusColor(user.status)}>{user.status}</Badge>
+                  <Button variant="outline" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
                 </div>
-              </CardContent>
-              <CardFooter className="border-t bg-muted/50 px-6 py-3">
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={`/users/${user.id}`}>Manage User</Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <div className="text-sm text-muted-foreground">Sites Managed</div>
+                  <div className="font-medium">{user.sites}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Last Login</div>
+                  <div className="font-medium">{user.lastLogin}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Role</div>
+                  <div className="font-medium capitalize">{user.role}</div>
+                </div>
+              </div>
+              <div className="flex space-x-2 mt-4">
+                <Button variant="outline" size="sm">
+                  Edit Permissions
                 </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>No users found</CardTitle>
-            <CardDescription>Get started by inviting users to your organization</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Invite team members to collaborate on your affiliate networks and sites.
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button asChild>
-              <Link href="/users/invite">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Invite User
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
+                <Button variant="outline" size="sm">
+                  View Activity
+                </Button>
+                <Button variant="outline" size="sm">
+                  Send Message
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>User Statistics</CardTitle>
+          <CardDescription>Overview of user roles and activity</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold">{users.length}</div>
+              <div className="text-sm text-muted-foreground">Total Users</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{users.filter((u) => u.status === "active").length}</div>
+              <div className="text-sm text-muted-foreground">Active Users</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{users.filter((u) => u.role === "admin").length}</div>
+              <div className="text-sm text-muted-foreground">Administrators</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{users.reduce((acc, u) => acc + u.sites, 0)}</div>
+              <div className="text-sm text-muted-foreground">Sites Managed</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

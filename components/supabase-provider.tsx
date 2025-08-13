@@ -2,36 +2,60 @@
 
 import type React from "react"
 
-import { createContext, useContext, useState, useEffect } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import type { SupabaseClient } from "@supabase/supabase-js"
+import { createContext, useContext, useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import type { SupabaseClient, User } from "@supabase/supabase-js"
 
 type SupabaseContext = {
   supabase: SupabaseClient
+  user: User | null
+  loading: boolean
 }
 
 const Context = createContext<SupabaseContext | undefined>(undefined)
 
-export function SupabaseProvider({ children }: { children: React.ReactNode }) {
-  const [supabase] = useState(() => createClientComponentClient())
+export function SupabaseProvider({
+  children,
+  initialUser = null,
+}: {
+  children: React.ReactNode
+  initialUser?: User | null
+}) {
+  const [supabase] = useState(() => createClient())
+  const [user, setUser] = useState<User | null>(initialUser)
+  const [loading, setLoading] = useState(!initialUser)
 
   useEffect(() => {
-    try {
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange(() => {
-        // Refresh the page on auth state change
-      })
-
-      return () => {
-        subscription.unsubscribe()
+    const getUser = async () => {
+      if (!initialUser) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        setUser(user)
+        setLoading(false)
       }
-    } catch (error) {
-      console.error("Error in auth state change:", error)
     }
-  }, [supabase])
 
-  return <Context.Provider value={{ supabase }}>{children}</Context.Provider>
+    getUser()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+
+      if (event === "SIGNED_OUT") {
+        // Clear any cached data
+        setUser(null)
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase, initialUser])
+
+  return <Context.Provider value={{ supabase, user, loading }}>{children}</Context.Provider>
 }
 
 export const useSupabase = () => {

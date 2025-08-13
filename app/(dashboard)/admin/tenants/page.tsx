@@ -1,124 +1,188 @@
-// Mark this page as dynamic to prevent static generation
-export const dynamic = "force-dynamic"
-
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
-import Link from "next/link"
-import { redirect } from "next/navigation"
-import { Building, Plus, Users } from "lucide-react"
-
-import { formatDate } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/server"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Plus, Building, Users, Globe } from "lucide-react"
 
 export default async function TenantsPage() {
-  const supabase = createServerComponentClient({ cookies })
+  const supabase = await createClient()
 
-  // Get the current session
+  // Get user data
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!session) {
-    redirect("/login")
+  if (!user) {
+    return <div>Not authenticated</div>
   }
 
-  // Get the user details
-  const { data: userData } = await supabase.from("users").select("*").eq("auth_id", session.user.id).single()
+  // Mock data for now - replace with actual queries
+  const tenants = [
+    {
+      id: 1,
+      name: "TechCorp Solutions",
+      domain: "techcorp.example.com",
+      plan: "enterprise",
+      status: "active",
+      users: 25,
+      sites: 12,
+      revenue: 15000,
+      createdAt: "2023-01-15",
+    },
+    {
+      id: 2,
+      name: "Digital Marketing Pro",
+      domain: "digitalmarketing.example.com",
+      plan: "professional",
+      status: "active",
+      users: 8,
+      sites: 5,
+      revenue: 3200,
+      createdAt: "2023-03-22",
+    },
+    {
+      id: 3,
+      name: "E-commerce Hub",
+      domain: "ecommercehub.example.com",
+      plan: "starter",
+      status: "trial",
+      users: 3,
+      sites: 2,
+      revenue: 0,
+      createdAt: "2023-11-01",
+    },
+  ]
 
-  if (!userData || userData.role !== "super_admin") {
-    redirect("/dashboard")
+  const getPlanColor = (plan: string) => {
+    switch (plan) {
+      case "enterprise":
+        return "bg-purple-100 text-purple-800"
+      case "professional":
+        return "bg-blue-100 text-blue-800"
+      case "starter":
+        return "bg-green-100 text-green-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
   }
 
-  // Get all tenants
-  const { data: tenants, error } = await supabase
-    .from("tenants")
-    .select(`
-      *,
-      subscription_tiers(*),
-      users:users(count),
-      networks:affiliate_networks(count)
-    `)
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("Error fetching tenants:", error)
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-100 text-green-800"
+      case "trial":
+        return "bg-yellow-100 text-yellow-800"
+      case "suspended":
+        return "bg-red-100 text-red-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
-          <p className="text-muted-foreground">Manage all organizations on the platform</p>
+          <h1 className="text-3xl font-bold tracking-tight">Tenants</h1>
+          <p className="text-muted-foreground">Manage tenant organizations and their subscriptions.</p>
         </div>
-
-        <Button asChild>
-          <Link href="/admin/tenants/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Organization
-          </Link>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Tenant
         </Button>
       </div>
 
-      {tenants && tenants.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {tenants.map((tenant) => (
-            <Card key={tenant.id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <CardTitle>{tenant.name}</CardTitle>
-                <CardDescription>Created {formatDate(tenant.created_at)}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-muted-foreground">Status</div>
-                  <div className="font-medium capitalize">{tenant.subscription_status}</div>
-
-                  <div className="text-muted-foreground">Plan</div>
-                  <div className="font-medium">{tenant.subscription_tiers?.name || "Free"}</div>
-
-                  <div className="text-muted-foreground">Users</div>
-                  <div className="font-medium flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    <span>{tenant.users?.[0]?.count || 0}</span>
-                  </div>
-
-                  <div className="text-muted-foreground">Networks</div>
-                  <div className="font-medium flex items-center gap-1">
-                    <Building className="h-3 w-3" />
-                    <span>{tenant.networks?.[0]?.count || 0}</span>
+      <div className="grid gap-6">
+        {tenants.map((tenant) => (
+          <Card key={tenant.id} className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Building className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <CardTitle className="text-lg">{tenant.name}</CardTitle>
+                    <CardDescription>{tenant.domain}</CardDescription>
                   </div>
                 </div>
-              </CardContent>
-              <CardFooter className="border-t bg-muted/50 px-6 py-3">
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={`/admin/tenants/${tenant.id}`}>Manage Organization</Link>
+                <div className="flex items-center space-x-2">
+                  <Badge className={getPlanColor(tenant.plan)}>{tenant.plan}</Badge>
+                  <Badge className={getStatusColor(tenant.status)}>{tenant.status}</Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-5">
+                <div>
+                  <div className="text-sm text-muted-foreground">Users</div>
+                  <div className="flex items-center space-x-1">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{tenant.users}</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Sites</div>
+                  <div className="flex items-center space-x-1">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{tenant.sites}</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Revenue</div>
+                  <div className="font-medium">${tenant.revenue.toLocaleString()}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Created</div>
+                  <div className="font-medium">{new Date(tenant.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Plan</div>
+                  <div className="font-medium capitalize">{tenant.plan}</div>
+                </div>
+              </div>
+              <div className="flex space-x-2 mt-4">
+                <Button variant="outline" size="sm">
+                  View Details
                 </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>No organizations found</CardTitle>
-            <CardDescription>Get started by creating your first organization</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Organizations represent your customers who use the platform.
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button asChild>
-              <Link href="/admin/tenants/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Organization
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
+                <Button variant="outline" size="sm">
+                  Manage Users
+                </Button>
+                <Button variant="outline" size="sm">
+                  Billing
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tenant Overview</CardTitle>
+          <CardDescription>Summary of all tenant organizations</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold">{tenants.length}</div>
+              <div className="text-sm text-muted-foreground">Total Tenants</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{tenants.filter((t) => t.status === "active").length}</div>
+              <div className="text-sm text-muted-foreground">Active Tenants</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{tenants.reduce((acc, t) => acc + t.users, 0)}</div>
+              <div className="text-sm text-muted-foreground">Total Users</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">
+                ${tenants.reduce((acc, t) => acc + t.revenue, 0).toLocaleString()}
+              </div>
+              <div className="text-sm text-muted-foreground">Total Revenue</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
