@@ -1,3 +1,4 @@
+// Mark this page as dynamic to prevent static generation
 export const dynamic = "force-dynamic"
 
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"

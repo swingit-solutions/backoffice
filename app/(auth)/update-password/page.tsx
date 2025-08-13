@@ -3,89 +3,49 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { createClient } from "@/lib/client"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isValidSession, setIsValidSession] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const { toast } = useToast()
   const supabase = createClient()
 
   useEffect(() => {
-    // Check if we have a valid session for password update
+    // Check if user has a valid session for password update
     const checkSession = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession()
-      if (session) {
-        setIsValidSession(true)
-      } else {
-        // If no session, try to get it from URL params (from email link)
-        const accessToken = searchParams.get("access_token")
-        const refreshToken = searchParams.get("refresh_token")
-
-        if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          })
-
-          if (!error) {
-            setIsValidSession(true)
-          } else {
-            console.error("Session error:", error)
-            toast({
-              title: "Invalid Session",
-              description: "The password reset link is invalid or has expired.",
-              variant: "destructive",
-            })
-            router.push("/reset-password")
-          }
-        } else {
-          toast({
-            title: "Invalid Access",
-            description: "Please use the link from your email to reset your password.",
-            variant: "destructive",
-          })
-          router.push("/reset-password")
-        }
+      if (!session) {
+        router.push("/login")
       }
     }
-
     checkSession()
-  }, [supabase, searchParams, router, toast])
+  }, [router, supabase.auth])
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
+    setError("")
 
     if (password !== confirmPassword) {
-      toast({
-        title: "Update Failed",
-        description: "Passwords do not match",
-        variant: "destructive",
-      })
-      setIsLoading(false)
+      setError("Passwords do not match")
+      setLoading(false)
       return
     }
 
     if (password.length < 6) {
-      toast({
-        title: "Update Failed",
-        description: "Password must be at least 6 characters long",
-        variant: "destructive",
-      })
-      setIsLoading(false)
+      setError("Password must be at least 6 characters long")
+      setLoading(false)
       return
     }
 
@@ -95,54 +55,42 @@ export default function UpdatePasswordPage() {
       })
 
       if (error) {
-        console.error("Update password error:", error)
-        toast({
-          title: "Update Failed",
-          description: error.message,
-          variant: "destructive",
-        })
-        return
+        setError(error.message)
+      } else {
+        setSuccess(true)
+        setTimeout(() => {
+          router.push("/dashboard")
+        }, 2000)
       }
-
-      console.log("Password updated successfully")
-      toast({
-        title: "Password Updated",
-        description: "Your password has been updated successfully.",
-      })
-
-      // Redirect to dashboard after successful password update
-      router.push("/dashboard")
-    } catch (error) {
-      console.error("Unexpected update password error:", error)
-      toast({
-        title: "Update Failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
+    } catch (err) {
+      setError("An unexpected error occurred")
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  if (!isValidSession) {
+  if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Validating Session...</CardTitle>
-            <CardDescription>Please wait while we validate your password reset request.</CardDescription>
+            <CardTitle className="text-2xl font-bold text-green-600">Password Updated</CardTitle>
+            <CardDescription>Your password has been successfully updated.</CardDescription>
           </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-sm text-gray-600">Redirecting you to the dashboard...</p>
+          </CardContent>
         </Card>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Update Password</CardTitle>
-          <CardDescription>Enter your new password below</CardDescription>
+          <CardDescription>Enter your new password</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleUpdatePassword} className="space-y-4">
@@ -151,11 +99,10 @@ export default function UpdatePasswordPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your new password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={loading}
                 minLength={6}
               />
             </div>
@@ -164,16 +111,16 @@ export default function UpdatePasswordPage() {
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Confirm your new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={loading}
                 minLength={6}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Updating..." : "Update Password"}
+            {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Updating..." : "Update Password"}
             </Button>
           </form>
         </CardContent>

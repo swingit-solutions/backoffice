@@ -2,106 +2,84 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, Globe, Home, Settings, Users, Building, LogOut } from "lucide-react"
-
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { LayoutDashboard, Key, Globe, Menu, X, PlusCircle } from "lucide-react"
+import { useState } from "react"
 
-interface SidebarProps {
-  isSuperAdmin?: boolean
-  isAdmin?: boolean
-}
-
-export function Sidebar({ isSuperAdmin = false, isAdmin = false }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname()
+  const [isOpen, setIsOpen] = useState(false)
 
-  const navItems = [
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen)
+  }
+
+  const navigation = [
     {
-      title: "Dashboard",
+      name: "Dashboard",
       href: "/dashboard",
-      icon: Home,
-      active: pathname === "/dashboard",
+      icon: LayoutDashboard,
     },
     {
-      title: "Networks",
-      href: "/networks",
-      icon: Globe,
-      active: pathname.startsWith("/networks"),
+      name: "API Keys",
+      href: "/api-keys",
+      icon: Key,
     },
     {
-      title: "Sites",
+      name: "Sites",
       href: "/sites",
       icon: Globe,
-      active: pathname.startsWith("/sites"),
-    },
-    {
-      title: "Analytics",
-      href: "/analytics",
-      icon: BarChart3,
-      active: pathname.startsWith("/analytics"),
-    },
-    {
-      title: "Users",
-      href: "/users",
-      icon: Users,
-      active: pathname.startsWith("/users"),
-      show: isAdmin, // Show for both admin and super_admin
-    },
-    {
-      title: "Settings",
-      href: "/settings",
-      icon: Settings,
-      active: pathname.startsWith("/settings"),
-    },
-    // Super admin only sections
-    {
-      title: "Organizations",
-      href: "/admin/tenants",
-      icon: Building,
-      active: pathname.startsWith("/admin/tenants"),
-      show: isSuperAdmin,
-    },
-    {
-      title: "System Settings",
-      href: "/admin/settings",
-      icon: Settings,
-      active: pathname.startsWith("/admin/settings"),
-      show: isSuperAdmin,
     },
   ]
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-background">
-      <div className="flex h-14 items-center border-b px-4">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <Globe className="h-5 w-5" />
-          <span>Affiliate Hub</span>
-        </Link>
+    <>
+      <div className="md:hidden flex items-center p-4 border-b">
+        <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+          <Menu className="h-6 w-6" />
+        </Button>
       </div>
-      <div className="flex-1 overflow-auto py-2">
-        <nav className="grid items-start px-2 text-sm">
-          {navItems
-            .filter((item) => item.show !== false)
-            .map((item, index) => (
-              <Link
-                key={index}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-foreground",
-                  item.active ? "bg-muted text-foreground" : "transparent",
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.title}</span>
+
+      <div className={cn("fixed inset-0 z-50 bg-background md:static md:z-auto", isOpen ? "flex" : "hidden md:flex")}>
+        <div className="flex w-full max-w-xs flex-col border-r bg-background p-4 md:w-64">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Backoffice</h2>
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+
+          <div className="mt-8 flex flex-1 flex-col">
+            <nav className="flex-1 space-y-2">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center rounded-md px-3 py-2 text-sm font-medium",
+                    pathname === item.href || pathname.startsWith(item.href + "/")
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="mt-auto pt-4">
+              <Link href="/sites/new">
+                <Button className="w-full">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  New Site
+                </Button>
               </Link>
-            ))}
-        </nav>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="mt-auto border-t p-4">
-        <Link href="/api/auth/signout" className="flex w-full items-center gap-3 rounded-lg bg-muted px-3 py-2 text-sm">
-          <LogOut className="h-4 w-4" />
-          <span>Log out</span>
-        </Link>
-      </div>
-    </div>
+    </>
   )
 }

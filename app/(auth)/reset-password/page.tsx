@@ -3,24 +3,24 @@
 import type React from "react"
 
 import { useState } from "react"
-import Link from "next/link"
-import { createClient } from "@/lib/client"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
   const supabase = createClient()
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
+    setError("")
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -28,53 +28,32 @@ export default function ResetPasswordPage() {
       })
 
       if (error) {
-        console.error("Reset password error:", error)
-        toast({
-          title: "Reset Failed",
-          description: error.message,
-          variant: "destructive",
-        })
-        return
+        setError(error.message)
+      } else {
+        setSuccess(true)
       }
-
-      console.log("Reset password email sent to:", email)
-      setIsSubmitted(true)
-      toast({
-        title: "Reset Email Sent",
-        description: "Please check your email for password reset instructions.",
-      })
-    } catch (error) {
-      console.error("Unexpected reset password error:", error)
-      toast({
-        title: "Reset Failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
+    } catch (err) {
+      setError("An unexpected error occurred")
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  if (isSubmitted) {
+  if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-green-600">Check Your Email</CardTitle>
-            <CardDescription>We've sent password reset instructions to {email}</CardDescription>
+            <CardDescription>We've sent you a password reset link.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-gray-600 text-center">
-              Click the link in the email to reset your password. The link will expire in 1 hour.
+          <CardContent className="text-center">
+            <p className="text-sm text-gray-600 mb-4">
+              Please check your email and click the reset link to update your password.
             </p>
-            <div className="flex flex-col space-y-2">
-              <Button onClick={() => setIsSubmitted(false)} variant="outline">
-                Send Another Email
-              </Button>
-              <Button asChild>
-                <Link href="/login">Back to Login</Link>
-              </Button>
-            </div>
+            <Button asChild>
+              <Link href="/login">Return to Login</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -82,11 +61,11 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
-          <CardDescription>Enter your email address and we'll send you a link to reset your password</CardDescription>
+          <CardDescription>Enter your email to receive a password reset link</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleResetPassword} className="space-y-4">
@@ -95,20 +74,21 @@ export default function ResetPasswordPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={loading}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Sending..." : "Send Reset Link"}
+            {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Sending..." : "Send Reset Link"}
             </Button>
           </form>
-          <div className="mt-4 text-center">
-            <Link href="/login" className="text-sm text-blue-600 hover:underline">
-              Back to Login
+          <div className="mt-4 text-center text-sm">
+            Remember your password?{" "}
+            <Link href="/login" className="text-blue-600 hover:underline">
+              Sign in
             </Link>
           </div>
         </CardContent>

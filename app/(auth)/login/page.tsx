@@ -3,69 +3,48 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import { createClient } from "@/lib/client"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const { toast } = useToast()
   const supabase = createClient()
-
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard"
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
+    setError("")
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
-        console.error("Login error:", error)
-        toast({
-          title: "Login Failed",
-          description: error.message,
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (data.user) {
-        console.log("Login successful:", data.user.email)
-        toast({
-          title: "Login Successful",
-          description: "Welcome back!",
-        })
-        router.push(redirectTo)
+        setError(error.message)
+      } else {
+        router.push("/dashboard")
         router.refresh()
       }
-    } catch (error) {
-      console.error("Unexpected login error:", error)
-      toast({
-        title: "Login Failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
+    } catch (err) {
+      setError("An unexpected error occurred")
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
@@ -78,11 +57,10 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -90,27 +68,27 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={loading}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing In..." : "Sign In"}
+            {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          <div className="mt-4 text-center space-y-2">
-            <Link href="/reset-password" className="text-sm text-blue-600 hover:underline">
+          <div className="mt-4 text-center text-sm">
+            <Link href="/reset-password" className="text-blue-600 hover:underline">
               Forgot your password?
             </Link>
-            <div className="text-sm text-gray-600">
-              Don't have an account?{" "}
-              <Link href="/register" className="text-blue-600 hover:underline">
-                Sign up
-              </Link>
-            </div>
+          </div>
+          <div className="mt-2 text-center text-sm">
+            Don't have an account?{" "}
+            <Link href="/register" className="text-blue-600 hover:underline">
+              Sign up
+            </Link>
           </div>
         </CardContent>
       </Card>

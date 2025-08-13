@@ -3,50 +3,35 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { createClient } from "@/lib/client"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
   const supabase = createClient()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
+    setError("")
 
     if (password !== confirmPassword) {
-      toast({
-        title: "Registration Failed",
-        description: "Passwords do not match",
-        variant: "destructive",
-      })
-      setIsLoading(false)
-      return
-    }
-
-    if (password.length < 6) {
-      toast({
-        title: "Registration Failed",
-        description: "Password must be at least 6 characters long",
-        variant: "destructive",
-      })
-      setIsLoading(false)
+      setError("Passwords do not match")
+      setLoading(false)
       return
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -55,49 +40,44 @@ export default function RegisterPage() {
       })
 
       if (error) {
-        console.error("Registration error:", error)
-        toast({
-          title: "Registration Failed",
-          description: error.message,
-          variant: "destructive",
-        })
-        return
+        setError(error.message)
+      } else {
+        setSuccess(true)
       }
-
-      if (data.user) {
-        console.log("Registration successful:", data.user.email)
-        toast({
-          title: "Registration Successful",
-          description: "Please check your email to verify your account.",
-        })
-
-        // If email confirmation is disabled, redirect to dashboard
-        if (data.session) {
-          router.push("/dashboard")
-          router.refresh()
-        } else {
-          // Otherwise, redirect to login with a message
-          router.push("/login?message=Please check your email to verify your account")
-        }
-      }
-    } catch (error) {
-      console.error("Unexpected registration error:", error)
-      toast({
-        title: "Registration Failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
+    } catch (err) {
+      setError("An unexpected error occurred")
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-green-600">Check Your Email</CardTitle>
+            <CardDescription>We've sent you a confirmation link to complete your registration.</CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-sm text-gray-600 mb-4">
+              Please check your email and click the confirmation link to activate your account.
+            </p>
+            <Button asChild>
+              <Link href="/login">Return to Login</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-          <CardDescription>Enter your information to create a new account</CardDescription>
+          <CardDescription>Enter your details to create a new account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
@@ -106,11 +86,10 @@ export default function RegisterPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -118,11 +97,10 @@ export default function RegisterPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={loading}
                 minLength={6}
               />
             </div>
@@ -131,25 +109,23 @@ export default function RegisterPage() {
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={loading}
                 minLength={6}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating Account..." : "Create Account"}
+            {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Creating account..." : "Create Account"}
             </Button>
           </form>
-          <div className="mt-4 text-center">
-            <div className="text-sm text-gray-600">
-              Already have an account?{" "}
-              <Link href="/login" className="text-blue-600 hover:underline">
-                Sign in
-              </Link>
-            </div>
+          <div className="mt-4 text-center text-sm">
+            Already have an account?{" "}
+            <Link href="/login" className="text-blue-600 hover:underline">
+              Sign in
+            </Link>
           </div>
         </CardContent>
       </Card>

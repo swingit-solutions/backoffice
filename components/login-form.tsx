@@ -8,7 +8,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "@/components/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
 export default function LoginForm() {
   const [email, setEmail] = useState("")

@@ -1,3 +1,21 @@
+/**
+ * GitHub Repository to v0 Chat Sync Script
+ *
+ * This script synchronizes a GitHub repository with v0 chat by:
+ * 1. Fetching the complete structure of a GitHub repository
+ * 2. Comparing it with what's currently in the v0 chat
+ * 3. Generating code blocks that can be pasted into v0 to update missing or changed files
+ *
+ * Configuration:
+ * - Set environment variables or modify the CONFIG object below
+ * - GITHUB_TOKEN must be set in environment variables
+ *
+ * Usage:
+ * - Run this script directly: node github-to-v0-sync.mjs
+ * - Or set it up as a GitHub Action (see github-to-v0-sync.yml)
+ */
+
+// Configuration - modify these for different projects
 const CONFIG = {
   // GitHub repository details
   owner: "swingit-solutions", // GitHub username or organization
