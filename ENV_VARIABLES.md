@@ -1,68 +1,116 @@
 # Environment Variables Guide
 
-This document provides information about the environment variables used in the Affiliate Network Backoffice application.
+This document outlines all the environment variables required for the Affiliate Hub Backoffice application.
 
-## Required Environment Variables
+## Required Variables
 
 ### Supabase Configuration
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | The URL of your Supabase project | `https://abcdefghijklm.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The anonymous key for your Supabase project | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | The service role key for admin operations | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
+\`\`\`env
+# Supabase URL - Get this from your Supabase project settings
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+
+# Supabase Anon Key - Public key for client-side operations
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Supabase Service Role Key - Private key for server-side admin operations
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+\`\`\`
 
 ### Application Configuration
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_APP_URL` | The URL where your application is hosted | `http://localhost:3000` or `https://backoffice.swingit.solutions` |
-| `ALLOWED_ORIGIN` | The origin allowed for CORS requests | `http://localhost:3000` or `https://backoffice.swingit.solutions` |
+\`\`\`env
+# Application URL - Used for redirects and email links
+NEXT_PUBLIC_APP_URL=https://your-domain.com
 
-## Optional Environment Variables
+# Allowed Origins for CORS (if needed)
+ALLOWED_ORIGIN=https://your-domain.com
+\`\`\`
 
-### Stripe Integration (if using payment features)
+### GitHub Integration (Optional)
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `STRIPE_SECRET_KEY` | Your Stripe secret key | `sk_test_...` |
-| `STRIPE_WEBHOOK_SECRET` | Your Stripe webhook signing secret | `whsec_...` |
+\`\`\`env
+# GitHub token for repository synchronization
+GITHUB_TOKEN=your-github-token
+\`\`\`
 
-## How to Set Up Environment Variables
+## Environment-Specific Settings
 
-### Local Development
+### Development (.env.local)
 
-1. Copy the `.env.local.example` file to `.env.local`:
-   \`\`\`bash
-   cp .env.local.example .env.local
-   \`\`\`
+\`\`\`env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+\`\`\`
 
-2. Fill in the values in `.env.local` with your actual credentials.
+### Production (Vercel)
 
-### Vercel Deployment
+Set the same variables in your Vercel project settings, but with production URLs:
 
-1. Go to your project settings in the Vercel dashboard.
-2. Navigate to the "Environment Variables" section.
-3. Add each variable and its value.
-4. Redeploy your application for the changes to take effect.
+\`\`\`env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NEXT_PUBLIC_APP_URL=https://your-production-domain.com
+\`\`\`
 
-## Security Considerations
+## Security Notes
 
-- Never commit your `.env.local` file or any file containing actual credentials to version control.
-- The `SUPABASE_SERVICE_ROLE_KEY` has admin privileges. Only use it in secure server contexts, never in client-side code.
-- Variables prefixed with `NEXT_PUBLIC_` will be exposed to the browser. Do not prefix sensitive variables with `NEXT_PUBLIC_`.
+1. **Never commit sensitive keys**: The `.env.local` file should never be committed to version control
+2. **Service Role Key**: This key has admin privileges - keep it secure and only use server-side
+3. **Public Keys**: The anon key and URL are safe to expose client-side
+4. **Production URLs**: Ensure production URLs use HTTPS
+
+## Getting Supabase Keys
+
+1. Go to your Supabase project dashboard
+2. Navigate to Settings > API
+3. Copy the Project URL and anon/public key
+4. For the service role key, copy the service_role key (keep this secret!)
+
+## Vercel Deployment
+
+When deploying to Vercel:
+
+1. Go to your Vercel project settings
+2. Navigate to Environment Variables
+3. Add each variable with the appropriate value
+4. Make sure to set the correct environment (Production, Preview, Development)
 
 ## Troubleshooting
 
-If you encounter issues related to environment variables:
+### Common Issues
 
-1. Verify that all required variables are set correctly.
-2. For local development, ensure your `.env.local` file is in the root directory of your project.
-3. For Vercel deployments, check that the variables are set in the Vercel dashboard and that you've redeployed after adding them.
-4. Check for typos in variable names.
+1. **Authentication not working**: Check that NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are correct
+2. **Redirects failing**: Verify NEXT_PUBLIC_APP_URL matches your actual domain
+3. **Admin operations failing**: Ensure SUPABASE_SERVICE_ROLE_KEY is set correctly
+4. **CORS errors**: Check ALLOWED_ORIGIN if you're having cross-origin issues
 
-## References
+### Validation
 
-- [Next.js Environment Variables Documentation](https://nextjs.org/docs/basic-features/environment-variables)
-- [Supabase Authentication Documentation](https://supabase.com/docs/guides/auth)
-- [Vercel Environment Variables Documentation](https://vercel.com/docs/concepts/projects/environment-variables)
+You can validate your environment variables by checking:
+
+1. The Supabase project dashboard shows the correct URL and keys
+2. The application loads without console errors
+3. Authentication flows work correctly
+4. Database operations succeed
+
+## Example .env.local File
+
+\`\`\`env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://abcdefghijklmnop.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Application Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Optional: GitHub Integration
+GITHUB_TOKEN=ghp_...
+\`\`\`
+
+Remember to replace the example values with your actual Supabase project credentials.
+\`\`\`

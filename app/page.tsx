@@ -1,6 +1,16 @@
 import { redirect } from "next/navigation"
+import { createClient } from "@/lib/server"
 
-export default async function RootPage() {
-  // Redirect to the login page
-  redirect("/login")
+export default async function HomePage() {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (user) {
+    redirect("/dashboard")
+  } else {
+    redirect("/login")
+  }
 }

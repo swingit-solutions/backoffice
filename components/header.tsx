@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Bell, Menu, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { UserNav } from "@/components/layout/user-nav"
+import { UserNav } from "@/components/user-nav"
 
 interface HeaderProps {
   user?: {

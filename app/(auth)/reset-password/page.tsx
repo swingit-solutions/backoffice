@@ -1,24 +1,23 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Globe } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/use-toast"
 
 // Get the site URL for redirects
 const getSiteUrl = () => {
   if (typeof window !== "undefined") {
-    return window.location.origin
+    return `${window.location.protocol}//${window.location.host}`
   }
   return process.env.NEXT_PUBLIC_APP_URL || "https://backoffice.swingit.solutions"
 }
@@ -31,7 +30,6 @@ const resetSchema = z.object({
 type ResetFormValues = z.infer<typeof resetSchema>
 
 export default function ResetPasswordPage() {
-  const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
@@ -49,11 +47,11 @@ export default function ResetPasswordPage() {
     setErrorMessage(null)
 
     try {
-      // Get the current site URL
       const siteUrl = getSiteUrl()
       console.log("Using site URL for password reset:", siteUrl)
 
-      // Use Supabase's password reset functionality with explicit site URL
+      const supabase = createClient()
+
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
         redirectTo: `${siteUrl}/update-password`,
       })
@@ -64,7 +62,6 @@ export default function ResetPasswordPage() {
         throw error
       }
 
-      // Show success message
       setEmailSent(true)
       toast({
         title: "Reset email sent",

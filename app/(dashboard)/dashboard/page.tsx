@@ -2,7 +2,7 @@ import Link from "next/link"
 import { ArrowRight, BarChart3, Users, Globe } from "lucide-react"
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/client"
 
 // Mark this page as dynamic to prevent static generation
 export const dynamic = "force-dynamic"
